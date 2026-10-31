@@ -163,18 +163,6 @@ configuration_options = {
         },
         default = true,
     },
-    {
-        name = "SoloBoss",
-        label = is_chinese and "单人快速打BOSS" or "Solo Boss Assist",
-        hover = is_chinese
-            and "玩家获得+10位面攻击和+10位面防御；所有BOSS最大生命值减少20%"
-            or "Player gains +10 planar damage and +10 planar defense; all bosses have 20% less max health",
-        options = {
-            { description = on,  data = true  },
-            { description = off, data = false },
-        },
-        default = false,
-    },
 }
 
 
