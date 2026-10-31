@@ -151,18 +151,6 @@ configuration_options = {
         },
         default = true,
     },
-    {
-        name = "QuickKnockback",
-        label = is_chinese and "快速抗击飞" or "Quick Knockback Recovery",
-        hover = is_chinese
-            and "缩短被击飞后倒地起身的硬直时间（默认约0.5秒，原版约1.5~2秒）"
-            or "Shorten the get-up animation after being knocked back (default ~0.5s, vanilla ~1.5-2s)",
-        options = {
-            { description = on,  data = true  },
-            { description = off, data = false },
-        },
-        default = true,
-    },
 }
 
 
