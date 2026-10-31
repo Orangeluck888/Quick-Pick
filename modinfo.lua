@@ -8,7 +8,7 @@ description = is_chinese
     and "缩短采集、拾取、收获，砍树，挖矿的动画时间（常开），但又不会过度超模；可选加速篝火烤食物、建造动画和制作读条。"
     or "Shorten the animation time for gathering, picking, harvesting, felling trees, and mining (always enabled), but without going overboard with excessive optimization; optional acceleration for cooking food over a campfire, building animations, and creating progress bars."
 author = "salt510"
-version = "1.2.0"
+version = "1.5.0"
 dst_compatible = true
 dont_starve_compatible = false
 reign_of_giants_compatible = false
@@ -21,8 +21,8 @@ icon_atlas = "modicon.xml"
 icon = "modicon.tex"
 
 server_filter_tags = {
-    "快速采集",
-    "Quick Pick",
+    "快速工作",
+    "Quick Work",
     "salt510",
     "2026",
 }
@@ -114,6 +114,66 @@ configuration_options = {
             { description = off, data = false },
         },
         default = true,
+    },
+    {
+        name = "QuickPlant",
+        label = is_chinese and "快速种地" or "Quick Plant",
+        hover = is_chinese
+            and "缩短播种种子和研究种子的动作动画时间"
+            or "Shorten the animation time for planting seeds and researching seeds",
+        options = {
+            { description = on,  data = true  },
+            { description = off, data = false },
+        },
+        default = true,
+    },
+    {
+        name = "QuickAnimal",
+        label = is_chinese and "快速交互动物" or "Quick Animal Interaction",
+        hover = is_chinese
+            and "缩短抚摸、喂食、刷毛、剃毛、屠宰、检查陷阱等动物交互动作的动画时间"
+            or "Shorten animations for petting, feeding, brushing, shaving, slaughtering, checking traps, etc.",
+        options = {
+            { description = on,  data = true  },
+            { description = off, data = false },
+        },
+        default = true,
+    },
+    {
+        name = "QuickHeavy",
+        label = is_chinese and "快速搬雕像" or "Quick Heavy Carry",
+        hover = is_chinese
+            and "降低搬运重物（雕像、可疑大理石等）时的移速惩罚（减速由85%降至50%）"
+            or "Reduce the movement speed penalty when carrying heavy items like statues (from 85% down to 50%)",
+        options = {
+            { description = on,  data = true  },
+            { description = off, data = false },
+        },
+        default = true,
+    },
+    {
+        name = "QuickKnockback",
+        label = is_chinese and "快速抗击飞" or "Quick Knockback Recovery",
+        hover = is_chinese
+            and "缩短被击飞后倒地起身的硬直时间（默认约0.5秒，原版约1.5~2秒）"
+            or "Shorten the get-up animation after being knocked back (default ~0.5s, vanilla ~1.5-2s)",
+        options = {
+            { description = on,  data = true  },
+            { description = off, data = false },
+        },
+        default = true,
+    },
+    {
+        name = "SoloBoss",
+        label = is_chinese and "单人快速打BOSS" or "Solo Boss Assist",
+        hover = is_chinese
+            and "玩家获得+10位面攻击和+10位面防御；所有BOSS最大生命值减少20%"
+            or "Player gains +10 planar damage and +10 planar defense; all bosses have 20% less max health",
+        options = {
+            { description = on,  data = true  },
+            { description = off, data = false },
+        },
+        default = false,
     },
 }
 

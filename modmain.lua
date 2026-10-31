@@ -31,7 +31,7 @@ end, "shadowmaxwell")
 -- 收获（如农场、蜂箱等）
 ChangeAction(GLOBAL.ACTIONS.HARVEST, "doshortaction")
 
--- 快速烹饪（篝火类火炉，开关，默认关闭）
+-- 快速烹饪（篝火类火炉）
 if GetModConfigData("Cook") then
     local FACTOR = 0.3  -- 约 3.3 倍速，改这里可调速度
 
@@ -98,7 +98,7 @@ local function ScaleTuningByFactor(keys, factor)
     end
 end
 
--- 快速砍树（开关）
+-- 快速砍树
 if GetModConfigData("Chop") then
     ScaleTuningByFactor({
         "EVERGREEN_CHOPS_SMALL", "EVERGREEN_CHOPS_NORMAL", "EVERGREEN_CHOPS_TALL",
@@ -111,7 +111,7 @@ if GetModConfigData("Chop") then
     }, 0.8)
 end
 
--- 快速挖矿（开关）
+-- 快速挖矿
 if GetModConfigData("Mine") then
     ScaleTuningByFactor({
         "ICE_MINE", "ROCKS_MINE", "ROCKS_MINE_MED", "ROCKS_MINE_LOW",
@@ -123,7 +123,7 @@ if GetModConfigData("Mine") then
     }, 0.8)
 end
 
--- 快速钓鱼（开关）
+-- 快速钓鱼
 if GetModConfigData("Fish") then
     AddPrefabPostInit("fishingrod", function(inst)
         local fr = inst.components.fishingrod
@@ -134,6 +134,163 @@ if GetModConfigData("Fish") then
             if fr.reeltime then
                 fr.reeltime = math.max(0.1, fr.reeltime * 0.8)
             end
+        end
+    end)
+end
+
+-- 快速种地
+if GetModConfigData("QuickPlant") then
+    local plant_actions = {
+        "PLANTSEED",                     -- 播种到农田/耕地
+        "PLANTSOIL",                     -- 翻土（部分流程包含）
+        "PLANTREGISTRY_RESEARCH",        -- 研究种子
+        "PLANTREGISTRY_RESEARCH_FAIL",   -- 研究失败
+        "ASSESSPLANTHAPPINESS",          -- 检查植物幸福度
+        "INTERACT_WITH",                 -- 照料植物（与作物互动/对话）
+    }
+    for _, key in ipairs(plant_actions) do
+        if GLOBAL.ACTIONS[key] then
+            ChangeAction(GLOBAL.ACTIONS[key], "doshortaction")
+        end
+    end
+end
+
+--快速交互动物
+if GetModConfigData("QuickAnimal") then
+    local animal_actions = {
+        "PET", "FEED", "MURDER", "BRUSH", "SHAVE",
+        "CHECKTRAP", "SLAUGHTER", "STOPUSINGITEM", "RETURN_FOLLOWER",
+    }
+    for _, key in ipairs(animal_actions) do
+        if GLOBAL.ACTIONS[key] then
+            ChangeAction(GLOBAL.ACTIONS[key], "doshortaction")
+        end
+    end
+
+    if GLOBAL.ACTIONS.CARNIVALGAME_FEED then
+        ChangeAction(GLOBAL.ACTIONS.CARNIVALGAME_FEED, function(inst, action)
+            return (inst.components.rider ~= nil and inst.components.rider:IsRiding() and "doshortaction") or
+                       "doequippedaction"
+        end)
+    end
+
+    if GLOBAL.ACTIONS.COMMUNEWITHSUMMONED then
+        ChangeAction(GLOBAL.ACTIONS.COMMUNEWITHSUMMONED, function(inst, action)
+            return action.invobject ~= nil and action.invobject:HasTag("abigail_flower") and "commune_with_abigail" or
+                       "doshortaction"
+        end)
+    end
+end
+
+-- 快速搬雕像
+-- 降低所有“重物”的移动减速倍率（默认 0.15，即减速 85%）
+-- 新倍率设为 0.5，即只减速 50%
+-- 注意：影响所有 heavy 标签物品，不限于雕像
+if GetModConfigData("QuickHeavy") then
+    -- TUNING.HEAVY_SPEED_MULT 是原版定义重物减速倍率的位置
+    -- 原值约 0.15（乘以移速 = 减速 85%）
+    if GLOBAL.TUNING.HEAVY_SPEED_MULT then
+        GLOBAL.TUNING.HEAVY_SPEED_MULT = 0.5
+    end
+end
+
+-- 快速抗击飞（缩短倒地起身硬直）
+if GetModConfigData("QuickKnockback") then
+    local GETUP_TIME = 0.5  -- 起身硬直时长（秒），原版约 1.5~2 秒；改小更快
+
+    local function QuickKnockbackGetUp(sg)
+        -- 1) 创建自定义的快速起身状态
+        if not sg.states["doquickknockbacklanded"] then
+            sg.states["doquickknockbacklanded"] = {
+                name = "doquickknockbacklanded",
+                tags = {"busy", "knockback"},
+                onenter = function(inst)
+                    inst.AnimState:PlayAnimation("knockbacklanded")
+                    inst.sg:SetTimeout(GETUP_TIME)
+                end,
+                ontimeout = function(inst)
+                    inst.sg:GoToState("idle")
+                end,
+                events = {
+                    GLOBAL.EventHandler("animover", function(inst)
+                        inst.sg:GoToState("idle")
+                    end),
+                },
+            }
+        end
+
+        -- 2) 把原本进入 knockbacklanded 的逻辑，重定向到我们的快速状态
+        local knockback_event = sg.events and sg.events["knockback"]
+        if knockback_event then
+            -- 保存原版 knockback 事件处理函数
+            local old_knockback_fn = knockback_event.fn
+            if old_knockback_fn then
+                -- 替换 knockback 事件处理，在内部把 "knockbacklanded" 替换为 "doquickknockbacklanded"
+                knockback_event.fn = function(inst, data)
+                    -- 使用原版逻辑，但临时把 knockbacklanded 状态名替换掉
+                    local old_GoToState = inst.sg.GoToState
+                    inst.sg.GoToState = function(self, statename, params)
+                        if statename == "knockbacklanded" then
+                            statename = "doquickknockbacklanded"
+                        end
+                        return old_GoToState(self, statename, params)
+                    end
+
+                    local ok, err = pcall(old_knockback_fn, inst, data)
+                    inst.sg.GoToState = old_GoToState  -- 恢复
+
+                    if not ok then
+                        print("[QuickKnockback] knockback event error:", err)
+                    end
+                end
+            end
+        end
+    end
+
+    -- 同时挂钩服务端和客户端
+    AddStategraphPostInit("wilson", QuickKnockbackGetUp)
+    AddStategraphPostInit("wilson_client", QuickKnockbackGetUp)
+end
+
+
+-- 单人快速打BOSS（开关，默认关闭）
+-- 玩家获得 +10 位面攻击 / +10 位面防御
+-- 所有带 "boss" 标签的生物最大生命值 -20%
+if GetModConfigData("SoloBoss") then
+    local PLANAR_BONUS = 10
+    local BOSS_HEALTH_FACTOR = 0.8  -- 0.8 = 减少20%
+
+    -- 1) 玩家位面攻击/防御（服务端添加，客户端通过 replica 同步）
+    AddPlayerPostInit(function(inst)
+        if not TheWorld.ismastersim then return end
+
+        -- 位面攻击
+        if not inst.components.planardamage then
+            inst:AddComponent("planardamage")
+        end
+        inst.components.planardamage:SetBaseDamage(
+            (inst.components.planardamage.basedamage or 0) + PLANAR_BONUS
+        )
+
+        -- 位面防御
+        if not inst.components.planardefense then
+            inst:AddComponent("planardefense")
+        end
+        inst.components.planardefense:SetBaseDefense(
+            (inst.components.planardefense.basedefense or 0) + PLANAR_BONUS
+        )
+    end)
+
+    -- 2) BOSS 血量 -20%
+    -- 用 AddPrefabPostInitAny 覆盖所有生物，再通过 boss 标签筛选
+    AddPrefabPostInitAny(function(inst)
+        if not inst:HasTag("boss") then return end
+
+        local health = inst.components.health
+        if health and health.maxhealth then
+            local new_max = math.max(1, math.ceil(health.maxhealth * BOSS_HEALTH_FACTOR))
+            health.maxhealth = new_max
+            health.currenthealth = math.min(health.currenthealth or new_max, new_max)
         end
     end)
 end
